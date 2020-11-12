@@ -20,6 +20,11 @@ import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.gd9_x_yyyy.API.MahasiswaAPI;
@@ -32,7 +37,12 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
+import static com.android.volley.Request.Method.DELETE;
+import static com.android.volley.Request.Method.POST;
 
 public class AdapterMahasiswa extends RecyclerView.Adapter<AdapterMahasiswa.adapterUserViewHolder> {
 
@@ -42,7 +52,7 @@ public class AdapterMahasiswa extends RecyclerView.Adapter<AdapterMahasiswa.adap
     private View view;
 
     public AdapterMahasiswa(Context context, List<Mahasiswa> mahasiswaList) {
-        this.context=context;
+        this.context = context;
         this.mahasiswaList = mahasiswaList;
         this.mahasiswaListFiltered = mahasiswaList;
     }
@@ -119,13 +129,13 @@ public class AdapterMahasiswa extends RecyclerView.Adapter<AdapterMahasiswa.adap
 
         public adapterUserViewHolder(@NonNull View itemView) {
             super(itemView);
-            txtNama         = (TextView) itemView.findViewById(R.id.txtNama);
-            txtNpm          = (TextView) itemView.findViewById(R.id.txtNpm);
+            txtNama = (TextView) itemView.findViewById(R.id.txtNama);
+            txtNpm = (TextView) itemView.findViewById(R.id.txtNpm);
             txtJenisKelamin = (TextView) itemView.findViewById(R.id.txtJenisKelamin);
-            txtProdi        = (TextView) itemView.findViewById(R.id.txtProdi);
-            ivGambar        = (ImageView) itemView.findViewById(R.id.ivGambar);
-            ivEdit          = (TextView) itemView.findViewById(R.id.ivEdit);
-            ivHapus         = (TextView) itemView.findViewById(R.id.ivHapus);
+            txtProdi = (TextView) itemView.findViewById(R.id.txtProdi);
+            ivGambar = (ImageView) itemView.findViewById(R.id.ivGambar);
+            ivEdit = (TextView) itemView.findViewById(R.id.ivEdit);
+            ivHapus = (TextView) itemView.findViewById(R.id.ivHapus);
         }
     }
 
@@ -136,11 +146,10 @@ public class AdapterMahasiswa extends RecyclerView.Adapter<AdapterMahasiswa.adap
                 String userInput = charSequence.toString().toLowerCase();
                 if (userInput.isEmpty()) {
                     mahasiswaListFiltered = mahasiswaList;
-                }
-                else {
+                } else {
                     List<Mahasiswa> filteredList = new ArrayList<>();
-                    for(Mahasiswa mahasiswa : mahasiswaList) {
-                        if(mahasiswa.getNama().toLowerCase().contains(userInput) ||
+                    for (Mahasiswa mahasiswa : mahasiswaList) {
+                        if (mahasiswa.getNama().toLowerCase().contains(userInput) ||
                                 mahasiswa.getNpm().toLowerCase().contains(userInput)) {
                             filteredList.add(mahasiswa);
                         }
@@ -151,6 +160,7 @@ public class AdapterMahasiswa extends RecyclerView.Adapter<AdapterMahasiswa.adap
                 filterResults.values = mahasiswaListFiltered;
                 return filterResults;
             }
+
             @Override
             protected void publishResults(CharSequence charSequence, FilterResults filterResults) {
                 mahasiswaListFiltered = (ArrayList<Mahasiswa>) filterResults.values;
@@ -163,13 +173,48 @@ public class AdapterMahasiswa extends RecyclerView.Adapter<AdapterMahasiswa.adap
         AppCompatActivity activity = (AppCompatActivity) view.getContext();
         FragmentManager fragmentManager = activity.getSupportFragmentManager();
         FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-        fragmentTransaction.replace(R.id.views_mahasiswa_fragment,fragment)
+        fragmentTransaction.replace(R.id.views_mahasiswa_fragment, fragment)
                 .addToBackStack(null)
                 .commit();
     }
 
     //Fungsi menghapus data mahasiswa
-    public void deleteMahasiswa(String npm){
+    public void deleteMahasiswa(String npm) {
+
+        RequestQueue queue = Volley.newRequestQueue(context);
+
+        final ProgressDialog progressDialog;
+        progressDialog = new ProgressDialog(context);
+        progressDialog.setMessage("loading....");
+        progressDialog.setMessage("Menaghapus data mahasiswa");
+        progressDialog.setProgressStyle(android.app.ProgressDialog.STYLE_SPINNER);
+        progressDialog.show();
+
+        StringRequest stringRequest = new StringRequest(DELETE, MahasiswaAPI.URL_DELETE + npm, new Response.Listener<String>() {
+            @Override
+            public void onResponse(String response) {
+                progressDialog.dismiss();
+
+                try {
+                    JSONObject obj = new JSONObject(response);
+
+
+                    Toast.makeText(context, obj.getString("message"), Toast.LENGTH_SHORT).show();
+                    notifyDataSetChanged();
+                    loadFragment(new ViewsMahasiswa());
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                progressDialog.dismiss();
+                Toast.makeText(context, error.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+
+        });
+        queue.add(stringRequest);
 
     }
 }

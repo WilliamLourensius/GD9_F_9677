@@ -23,6 +23,11 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.StringRequest;
+import com.android.volley.toolbox.Volley;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.gd9_x_yyyy.API.MahasiswaAPI;
@@ -36,6 +41,9 @@ import org.json.JSONObject;
 
 import java.util.HashMap;
 import java.util.Map;
+
+import static com.android.volley.Request.Method.POST;
+import static com.android.volley.Request.Method.PUT;
 
 
 public class TambahEdit extends Fragment {
@@ -185,11 +193,92 @@ public class TambahEdit extends Fragment {
                 .commit();
     }
 
-    public void tambahMahasiswa(final String npm, final String nama, final String jk, final String prodi){
-
+    public void tambahMahasiswa(final String npm, final String nama, final String jk, final String prodi) {
+        //Pendeklarasian
+        RequestQueue queue = Volley.newRequestQueue(getContext());
+        final ProgressDialog progressDialog;
+        progressDialog = new ProgressDialog(getContext());
+        progressDialog.setMessage("loading....");
+        progressDialog.setTitle("Menambahkan data mahasiswa");
+        progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+        progressDialog.show();
+        //Memulai membuat permintaan request menghapus data ke jaringan
+        StringRequest stringRequest = new StringRequest(POST, MahasiswaAPI.URL_ADD, new Response.Listener<String>() {
+            @Override
+            public void onResponse(String response) {
+                //Disini bagian jika response jaringan berhasil tidak terdapat ganguan/error
+                progressDialog.dismiss();
+                try {//Mengubah response string menjadi object
+                    JSONObject obj = new JSONObject(response);
+                    //obj.getString("status") digunakan untuk mengambil pesan status dari response
+                    if (obj.getString("status").equals("Success")) {
+                        loadFragment(new ViewsMahasiswa());
+                    }//obj.getString("message") digunakan untuk mengambil pesan message dari response
+                    Toast.makeText(getContext(), obj.getString("message"), Toast.LENGTH_SHORT).show();
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {//Disini bagian jika response jaringan terdapat ganguan/error
+                progressDialog.dismiss();
+                Toast.makeText(getContext(), error.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        }) {
+            @Override
+            protected Map<String, String> getParams() {/*Disini adalah proses memasukan/mengirimkan parameter key dengan data value,dan nama key nya harus sesuai dengan parameter key yang diminta oleh jaringanAPI.*/
+                Map<String, String> params = new HashMap<String, String>();
+                params.put("npm", npm);
+                params.put("nama", nama);
+                params.put("prodi", prodi);
+                params.put("jenis_kelamin", jk);
+                return params;
+            }
+        };//Disini proses penambahan request yang sudah kita buat ke reuest queue yang sudah dideklarasi
+        queue.add(stringRequest);
     }
 
-    public void editMahasiswa(final String npm, final String nama, final String jk, final String prodi){
-
+    public void editMahasiswa(final String npm, final String nama, final String jk, final String prodi) {
+        //Pendeklarasian queue
+        RequestQueue queue = Volley.newRequestQueue(getContext());
+        final ProgressDialog progressDialog;
+        progressDialog = new ProgressDialog(getContext());
+        progressDialog.setMessage("loading....");
+        progressDialog.setTitle("Mengubah data mahasiswa");
+        progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+        progressDialog.show();
+        //Memulai membuat permintaan request menghapus data ke jaringan
+        StringRequest stringRequest = new StringRequest(PUT, MahasiswaAPI.URL_UPDATE + npm, new Response.Listener<String>() {
+            @Override
+            public void onResponse(String response) {//Disini bagian jika response jaringan berhasil tidak terdapat ganguan/error
+                progressDialog.dismiss();
+                try {
+                    //Mengubah response string menjadi object
+                    JSONObject obj = new JSONObject(response);
+                    //obj.getString("message") digunakan untuk mengambil pesan message dari response
+                    Toast.makeText(getContext(), obj.getString("message"), Toast.LENGTH_SHORT).show();
+                    loadFragment(new ViewsMahasiswa());
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {//Disini bagian jika response jaringan terdapat ganguan/error
+                progressDialog.dismiss();
+                Toast.makeText(getContext(), error.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        }) {
+            @Override
+            protected Map<String, String> getParams() {/*Disini adalah proses memasukan/mengirimkan parameter key dengan data value,dan nama key nya harus sesuai dengan parameter key yang diminta oleh jaringanAPI.*/
+                Map<String, String> params = new HashMap<String, String>();
+                params.put("nama", nama);
+                params.put("prodi", prodi);
+                params.put("jenis_kelamin", jk);
+                return params;
+            }
+        };//Disini proses penambahan request yang sudah kita buat ke reuest queue yang sudah dideklarasi
+        queue.add(stringRequest);
     }
 }
